@@ -94,6 +94,7 @@
                                     type="object"
                                     class="oe_link oe_read_only"/>
                             </div>
+                        <field name="create_not_exists"/>
                     </group>
                     <group>
                         <field name="base_path"/>

@@ -61,6 +61,12 @@ class server(models.Model):
         },
     }
 
+    create_not_exists = fields.Boolean(
+        string='Create Not Exists Path',
+        default=True,
+        help="Create not exists path in state 'active'",
+    )
+
     name = fields.Char(
         string='Name',
         required=True,
@@ -371,6 +377,26 @@ class server(models.Model):
             self.check_instance_user_group()
 
     @api.one
+    def create(self, vals):
+        result = super(server, self).create(vals)
+        if 'active' == vals.get('state'):
+            result.check_server_setting()
+        return result
+
+    @api.multi
+    def write(self, vals):
+        result = super(server, self).write(vals)
+        if 'active' == vals.get('state'):
+            self.check_server_setting()
+        return result
+
+    @api.model
+    def check_server_setting(self):
+        self.check_sources_path()
+        self.check_service_path()
+        self.check_instance_user_group()
+
+    @api.one
     def unlink(self):
         if self.state not in ('draft', 'cancel'):
             raise Warning(_(
@@ -397,10 +423,13 @@ class server(models.Model):
         """Check or exists source_path"""
         self.get_env()
         if not exists(self.sources_path):
-            raise Warning(
-                _('No Source Directory!'),
-                _("Please first create the source directory '%s'!") %
-                self.sources_path)
+            if 'active' == self.state and self.create_not_exists:
+                sudo('mkdir -p ' + self.sources_path)
+            else:
+                raise Warning(
+                    _('No Source Directory!'),
+                    _("Please first create the source directory '%s'!") %
+                    self.sources_path)
         return self.sources_path
 
     @api.one
@@ -408,10 +437,13 @@ class server(models.Model):
         """Check or exists service_path"""
         self.get_env()
         if not exists(self.service_path):
-            raise Warning(
-                _('Server Service Folder not Found!'),
-                _("Service folder '%s' not found. Please create it first!") %
-                self.service_path)
+            if 'active' == self.state and self.create_not_exists:
+                sudo('mkdir -p ' + server.service_path)
+            else:
+                raise Warning(
+                    _('Server Service Folder not Found!'),
+                    _("Service folder '%s' not found. Please create it first!") %
+                    self.service_path)
         return self.service_path
 
     @api.one
