@@ -157,8 +157,7 @@ class environment_repository(models.Model):
             sudo('git checkout ' + self.branch_id.name)
             sudo('git submodule update --init --recursive')
 
-        if not literal_eval(self.addons_paths):
-            self.addons_paths = self.check_for_addons_paths()
+        self.addons_paths = self.check_for_addons_paths()
 
         # install pip packages
         self.install_pip_packages()
